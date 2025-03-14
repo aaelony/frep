@@ -23,13 +23,25 @@ fn rename_files(paths: Box<dyn Iterator<Item = PathBuf>>, find: &str, replace: &
         .filter(|path| path.exists())
         .filter(|path| {
             path.file_name()
-                .and_then(|n| Some(n.to_string_lossy()))
-                .map_or(false, |name| name.contains(find))
+                .map(|n| n.to_string_lossy())
+                .is_some_and(|name| name.contains(find))
         })
         .try_for_each(|path| {
             let file_name = path.file_name().unwrap_or_default().to_string_lossy();
             let new_file_name = file_name.replace(find, replace);
             let new_path = path.with_file_name(new_file_name);
+
+            if new_path.exists() {
+                if let Ok(metadata) = new_path.metadata() {
+                    if metadata.len() > 0 {
+                        eprintln!(
+                            "Warning: '{}' already exists and is not empty. Skipping.",
+                            new_path.display()
+                        );
+                        return Ok(()); // Skip this file but continue with others
+                    }
+                }
+            }
 
             fs::rename(&path, &new_path).map(|_| {
                 println!("Renamed: {} -> {}", path.display(), new_path.display());
