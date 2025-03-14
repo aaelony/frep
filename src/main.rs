@@ -1,24 +1,33 @@
 use glob::glob;
-use std::{env, fs, process}; // Add glob = "0.3.1" to Cargo.toml
+use std::{env, fs, path::PathBuf, process};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 4 {
+    if args.len() < 4 {
         eprintln!("Usage: {} <find> <replace> <file_pattern>", args[0]);
+        eprintln!("{:?}", args);
         process::exit(1);
     }
 
     let find = &args[1];
     let replace = &args[2];
-    let pattern = &args[3];
+    let paths: Box<dyn Iterator<Item = PathBuf>> =
+        if args.len() == 4 && (args[3].contains('*') || args[3].contains('?')) {
+            Box::new(
+                glob(&args[3])
+                    .unwrap_or_else(|err| {
+                        eprintln!("Invalid pattern {}: {}", args[3], err);
+                        process::exit(1);
+                    })
+                    .filter_map(Result::ok),
+            )
+        } else {
+            // Handle shell-expanded arguments as individual paths
+            Box::new(args[3..].iter().map(PathBuf::from))
+        };
 
-    let entries = glob(pattern).unwrap_or_else(|err| {
-        eprintln!("Invalid pattern {}: {}", pattern, err);
-        process::exit(1);
-    });
-
-    entries
-        .filter_map(Result::ok)
+    paths
+        .filter(|path| path.exists())
         .filter(|path| {
             path.file_name()
                 .and_then(|n| Some(n.to_string_lossy()))
