@@ -1,7 +1,7 @@
 use glob::glob;
 use std::{env, fs, path::PathBuf, process};
 
-/// Processes file rename operations based on a search pattern.
+/// Renames files based on a search pattern.
 ///
 /// # Arguments
 ///
