@@ -1,6 +1,6 @@
 # frep
 
-`frep` is a command line tool to rename files in the  based on a search pattern.
+`frep` is a command line tool to rename files in the based on a search pattern.
 
 
 ## Usage
